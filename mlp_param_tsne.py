@@ -25,6 +25,7 @@ low_dim = 2
 nb_epoch = 100
 shuffle_interval = nb_epoch + 1
 n_jobs = 4
+perplexity = 30.0
 
 
 def Hbeta(D, beta):
@@ -47,16 +48,16 @@ def x2p_job(data):
     while np.abs(Hdiff) > tol and tries < 50:
         if Hdiff > 0:
             betamin = beta
-            if betamax == np.inf or betamax == -np.inf:
+            if betamax == -np.inf:
                 beta = beta * 2
             else:
-                beta = (beta + betamax) / 2
+                beta = (betamin + betamax) / 2
         else:
             betamax = beta
-            if betamin == np.inf or betamin == -np.inf:
+            if betamin == -np.inf:
                 beta = beta / 2
             else:
-                beta = (beta + betamin) / 2
+                beta = (betamin + betamax) / 2
 
         H, thisP = Hbeta(Di, beta)
         Hdiff = H - logU
@@ -65,7 +66,8 @@ def x2p_job(data):
     return i, thisP
 
 
-def x2p(X, tol=1e-5, perplexity=30.0, n_jobs=1):
+def x2p(X):
+    tol = 1e-5
     n = X.shape[0]
     logU = np.log(perplexity)
 
@@ -88,13 +90,12 @@ def x2p(X, tol=1e-5, perplexity=30.0, n_jobs=1):
     return P
 
 
-def calculate_P(X, n_jobs):
+def calculate_P(X):
     print "Computing pairwise distances..."
     n = X.shape[0]
     P = np.zeros([n, batch_size])
     for i in xrange(0, n, batch_size):
-        # P_batch = tsne_raw.x2p(X_train[i:i+batch_size])
-        P_batch = x2p(X_train[i:i + batch_size], n_jobs=n_jobs)
+        P_batch = x2p(X[i:i + batch_size])
         P_batch[np.isnan(P_batch)] = 0
         P_batch = P_batch + P_batch.T
         P_batch = P_batch / P_batch.sum()
@@ -137,9 +138,7 @@ print "X_train.shape:", X_train.shape
 print "X_test.shape:", X_test.shape
 
 batch_num = int(n // batch_size)
-n = batch_num * batch_size
-X_train = X_train[:n]
-P = np.zeros([n, batch_size])
+m = batch_num * batch_size
 
 
 print "build model"
@@ -162,13 +161,13 @@ fig = plt.figure(figsize=(5, 5))
 for epoch in range(nb_epoch):
     # shuffle X_train and calculate P
     if epoch % shuffle_interval == 0:
-        X_train = X_train[np.random.permutation(n)]
-        P = calculate_P(X_train, n_jobs=n_jobs)
+        X = X_train[np.random.permutation(n)[:m]]
+        P = calculate_P(X)
 
     # train
     loss = 0
     for i in xrange(0, n, batch_size):
-        loss += model.train_on_batch(X_train[i:i+batch_size], P[i:i+batch_size])
+        loss += model.train_on_batch(X[i:i+batch_size], P[i:i+batch_size])
     print "Epoch: {}/{}, loss: {}".format(epoch+1, nb_epoch, loss / batch_num)
 
     # visualize training process
