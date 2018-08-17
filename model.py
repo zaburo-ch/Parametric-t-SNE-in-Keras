@@ -7,7 +7,7 @@ from keras.callbacks import Callback
 fc = keras.layers.core.Dense
 
 
-def KLdivergence(P, Y, n_dims=2, batch_size=100):
+def kl_divergence(P, Y, n_dims=2, batch_size=100):
     alpha = n_dims - 1.
     sum_Y = K.sum(K.square(Y), axis=1)
     eps = K.variable(1e-14)
@@ -27,5 +27,5 @@ def simple_dnn(input_layer):
     model.add(fc(500, activation='relu'))
     model.add(fc(2000, activation='relu'))
     model.add(fc(2))
-    model.compile(loss=KLdivergence, optimizer="adam")
+    model.compile(loss=kl_divergence, optimizer="adam")
     return model
