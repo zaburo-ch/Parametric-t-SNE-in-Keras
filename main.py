@@ -205,15 +205,18 @@ def main(args):
         perplexity=args.perplexity,
         n_iter=args.n_iter,
         verbose=1)
-    ptsne.fit(dataset)
-    pred = ptsne.transform(dataset)
-    # pred = ptsne.fit_transform(dataset)
+    pred = ptsne.fit_transform(dataset)
     np.save(RESULT_DIR / 'tranform.npy', pred)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Parametric t-SNE.')
+    subparsers = parser.add_subparsers(dest='command')
+
+    train_group = subparsers.add_parser(
+        'train',
+        description='Train a new parametric t-SNE model.')
     parser.add_argument(
         '--dataset', type=pathlib.Path,
         default=pathlib.Path('dataset', 'sample1000.npy'),
